@@ -52,7 +52,7 @@
       document.getElementById("location").value = coord;
     });
 
-    fetch("https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec"")
+    fetch("https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec")
       .then(res => res.json())
       .then(data => {
         const driverSelect = document.getElementById("driver");
