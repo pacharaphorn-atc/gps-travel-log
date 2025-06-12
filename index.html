@@ -5,28 +5,74 @@
   <title>ฟอร์มแจ้งไมล์ก่อนเดินทาง</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; padding: 1rem; background: #f9f9f9; }
-    h2 { color: #333; }
-    label { display: block; margin-top: 1rem; font-weight: bold; }
-    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; }
-    button { margin-top: 1.5rem; padding: 0.75rem; background: #007bff; color: white; border: none; width: 100%; font-size: 1rem; }
-    .note { font-size: 0.9rem; color: gray; margin-top: 0.25rem; }
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      background: #fffdf7;
+      color: #222;
+      font-size: 1.2rem;
+    }
+    h2 {
+      color: #e86c00;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 1.5rem;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1.2rem;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    button {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #e86c00;
+      color: white;
+      border: none;
+      width: 100%;
+      font-size: 1.3rem;
+      border-radius: 0.5rem;
+    }
+    img.logo {
+      display: block;
+      max-width: 200px;
+      margin: 0 auto 1rem;
+    }
+    .note {
+      font-size: 1rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
   </style>
 </head>
 <body>
+  <img src="https://raw.githubusercontent.com/pacharaphorn-atc/gps-travel-log/main/logo.png" alt="ATC Logo" class="logo">
   <h2>ฟอร์มแจ้งไมล์ก่อนเดินทาง</h2>
   <form id="travelForm">
     <label>ทะเบียนรถ</label>
     <input type="text" name="plate" id="plate" readonly>
 
     <label>ชื่อคนขับ</label>
-    <input type="text" name="driver" required>
+    <select name="driver" required>
+      <option value="">-- กรุณาเลือก --</option>
+      <option value="สมชาย">สมชาย</option>
+      <option value="สมหญิง">สมหญิง</option>
+      <option value="ประยุทธ">ประยุทธ</option>
+    </select>
 
     <label>เลขไมล์ก่อนเดินทาง</label>
     <input type="number" name="mileage" required>
 
     <label>แนบรูปไมล์</label>
-    <input type="file" name="image" accept="image/*" capture required>
+    <input type="file" name="image" id="imageInput" accept="image/*" capture required>
 
     <label>พิกัดปัจจุบัน</label>
     <input type="text" name="location" id="location" readonly>
@@ -39,12 +85,10 @@
   </form>
 
   <script>
-    // รับทะเบียนรถจาก URL
     const params = new URLSearchParams(window.location.search);
     const plate = params.get("plate") || "";
     document.getElementById("plate").value = plate;
 
-    // รับพิกัด
     navigator.geolocation.getCurrentPosition(
       function(pos) {
         const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
@@ -56,11 +100,21 @@
       }
     );
 
-    // ส่งข้อมูล
+    let base64Image = "";
+    document.getElementById("imageInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        base64Image = reader.result.split(',')[1];
+      };
+      reader.readAsDataURL(file);
+    });
+
     document.getElementById("travelForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const form = e.target;
       const formData = new FormData(form);
+      formData.append("imageBase64", base64Image);
 
       try {
         const response = await fetch("https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec", {
