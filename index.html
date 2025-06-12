@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>ฟอร์มแจ้งไมล์ก่อนเดินทาง</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #f9f9f9; }
+    h2 { color: #333; }
+    label { display: block; margin-top: 1rem; font-weight: bold; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; }
+    button { margin-top: 1.5rem; padding: 0.75rem; background: #007bff; color: white; border: none; width: 100%; font-size: 1rem; }
+    .note { font-size: 0.9rem; color: gray; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h2>ฟอร์มแจ้งไมล์ก่อนเดินทาง</h2>
+  <form id="travelForm">
+    <label>ทะเบียนรถ</label>
+    <input type="text" name="plate" id="plate" readonly>
+
+    <label>ชื่อคนขับ</label>
+    <input type="text" name="driver" required>
+
+    <label>เลขไมล์ก่อนเดินทาง</label>
+    <input type="number" name="mileage" required>
+
+    <label>แนบรูปไมล์</label>
+    <input type="file" name="image" accept="image/*" capture required>
+
+    <label>พิกัดปัจจุบัน</label>
+    <input type="text" name="location" id="location" readonly>
+    <div class="note">ระบบจะกรอกอัตโนมัติ</div>
+
+    <label>หมายเหตุเพิ่มเติม</label>
+    <textarea name="note"></textarea>
+
+    <button type="submit">ส่งข้อมูล</button>
+  </form>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const plate = params.get("plate") || "";
+    document.getElementById("plate").value = plate;
+
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+      document.getElementById("location").value = coord;
+    });
+
+    document.getElementById("travelForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      const response = await fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID_HERE/exec", {
+        method: "POST",
+        body: formData
+      });
+
+      if (response.ok) {
+        alert("ส่งข้อมูลเรียบร้อยแล้ว ✅");
+        form.reset();
+      } else {
+        alert("เกิดข้อผิดพลาดในการส่งข้อมูล ❌");
+      }
+    });
+  </script>
+</body>
+</html>
