@@ -11,7 +11,7 @@
     input, select, textarea { width: 100%; padding: 0.6rem; margin-top: 0.25rem; font-size: 1.1rem; }
     button { margin-top: 1.5rem; padding: 0.75rem; background: #ff6600; color: white; border: none; width: 100%; font-size: 1.2rem; border-radius: 5px; }
     .note { font-size: 0.95rem; color: gray; margin-top: 0.25rem; }
-    img.logo {display: block; margin: 0 auto 1rem auto; width: 300px; height: auto; }
+    img.logo { display: block; margin: 0 auto 1rem auto; width: 300px; height: auto; }
   </style>
 </head>
 <body>
@@ -30,7 +30,7 @@
     <input type="number" name="mileage" required>
 
     <label>แนบรูปไมล์</label>
-    <input type="file" name="image" accept="image/*" capture required>
+    <input type="file" name="image" id="imageInput" accept="image/*" capture required>
 
     <label>พิกัดปัจจุบัน</label>
     <input type="text" name="location" id="location" readonly>
@@ -43,15 +43,18 @@
   </form>
 
   <script>
+    // ดึงทะเบียนรถจาก URL
     const params = new URLSearchParams(window.location.search);
     const plate = params.get("plate") || "";
     document.getElementById("plate").value = plate;
 
+    // ดึงพิกัด GPS
     navigator.geolocation.getCurrentPosition(function(pos) {
       const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
       document.getElementById("location").value = coord;
     });
 
+    // ดึงรายชื่อคนขับจาก API
     fetch("https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec")
       .then(res => res.json())
       .then(data => {
@@ -65,10 +68,23 @@
         });
       });
 
+    // เก็บรูป base64
+    let base64Image = "";
+    document.getElementById("imageInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        base64Image = reader.result.split(',')[1];
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // เมื่อกดส่งฟอร์ม
     document.getElementById("travelForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const form = e.target;
       const formData = new FormData(form);
+      formData.append("imageBase64", base64Image);
 
       const response = await fetch("https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec", {
         method: "POST",
@@ -76,10 +92,11 @@
       });
 
       if (response.ok) {
-        alert("ส่งข้อมูลเรียบร้อยแล้ว ✅");
+        alert("✅ ส่งข้อมูลเรียบร้อย");
         form.reset();
+        base64Image = "";
       } else {
-        alert("เกิดข้อพลาดในการส่งข้อมูล ❌");
+        alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
       }
     });
   </script>
