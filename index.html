@@ -54,21 +54,20 @@
   </div>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbwnQxc30iyXQUZvO4q6jubqOiJtaa0vPKTEbWCY4eQdOb_OrqrCouNO8_mlEJVNtBjr/exec"; // ✅ ใส่ Web App URL ที่ Deploy แล้ว
-
+    const apiUrl = "https://script.google.com/macros/s/AKfycbwnQxc30iyXQUZvO4q6jubqOiJtaa0vPKTEbWCY4eQdOb_OrqrCouNO8_mlEJVNtBjr/exec";
     let base64Image = "";
 
-    // เติมทะเบียนรถจาก query
+    // 🔹 ดึงทะเบียนรถจาก query string
     const params = new URLSearchParams(window.location.search);
     document.getElementById("plate").value = params.get("plate") || "";
 
-    // GPS
+    // 🔹 รับพิกัด GPS
     navigator.geolocation.getCurrentPosition(function(pos) {
       const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
       document.getElementById("location").value = coord;
     });
 
-    // ดึงรายชื่อคนขับและไซต์งาน
+    // 🔹 โหลดชื่อคนขับ / ไซต์งาน
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
@@ -86,11 +85,11 @@
         });
       })
       .catch(err => {
-        console.error("🚨 Error loading names:", err);
-        alert("เกิดข้อผิดพลาดในการโหลดรายชื่อคนขับ/ไซต์งาน");
+        console.error("🚨 โหลดรายชื่อผิดพลาด:", err);
+        alert("โหลดรายชื่อคนขับหรือไซต์งานไม่สำเร็จ");
       });
 
-    // แปลงรูปเป็น base64
+    // 🔹 แปลงรูปเป็น base64
     document.getElementById("imageInput").addEventListener("change", function(e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -100,7 +99,7 @@
       reader.readAsDataURL(file);
     });
 
-    // เมื่อส่งฟอร์ม
+    // 🔹 ส่งฟอร์ม
     document.getElementById("travelForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const form = e.target;
@@ -117,6 +116,7 @@
         return;
       }
 
+      // 🔸 แสดงแถบโหลด
       const loadingDiv = document.getElementById("loading");
       const progressBar = document.getElementById("progressBar");
       const progressText = document.getElementById("progressText");
@@ -142,8 +142,8 @@
           body: JSON.stringify(payload)
         });
 
-        const resultText = await response.text();  // ⬅️ ดึงข้อความจากฝั่ง Apps Script
-        console.log("📦 Server Response:", resultText);
+        const resultText = await response.text();
+        console.log("📦 Server response:", resultText);
 
         clearInterval(loadingInterval);
         progressBar.value = 100;
@@ -154,14 +154,14 @@
           form.reset();
           base64Image = "";
         } else {
-          alert("❌ ข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์: " + resultText);
+          alert("❌ ข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์:\n" + resultText);
         }
       } catch (err) {
         clearInterval(loadingInterval);
         progressBar.value = 0;
         progressText.textContent = "❌ เกิดข้อผิดพลาด";
-        console.error("❌ Network Error:", err);
-        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+        console.error("❌ Network error:", err);
+        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ\n" + err.message);
       } finally {
         setTimeout(() => {
           loadingDiv.style.display = "none";
