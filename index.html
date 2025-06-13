@@ -88,24 +88,28 @@
 
   // ✅ เหลือเพียง 1 submit listener
   document.getElementById("travelForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    formData.append("imageBase64", base64Image);
+  e.preventDefault();
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      body: formData
-    });
+  const form = e.target;
+  const formData = new FormData(form);
+  const plainData = Object.fromEntries(formData.entries());
+  plainData.imageBase64 = base64Image;
 
-    if (response.ok) {
-      alert("✅ ส่งข้อมูลเรียบร้อย");
-      form.reset();
-      base64Image = "";
-    } else {
-      alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
-    }
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(plainData)
   });
+
+  if (response.ok) {
+    alert("✅ ส่งข้อมูลเรียบร้อย");
+    form.reset();
+    base64Image = "";
+  } else {
+    alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
+  }
+});
+
 </script>
 </body>
 </html>
