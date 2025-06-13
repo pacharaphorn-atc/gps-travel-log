@@ -47,69 +47,65 @@
   </form>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
-    let base64Image = "";
+  const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
+  let base64Image = "";
 
-    // ดึงทะเบียนรถจาก query string
-    const params = new URLSearchParams(window.location.search);
-    document.getElementById("plate").value = params.get("plate") || "";
+  const params = new URLSearchParams(window.location.search);
+  document.getElementById("plate").value = params.get("plate") || "";
 
-    // ดึงพิกัด GPS
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
-      document.getElementById("location").value = coord;
-    });
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+    document.getElementById("location").value = coord;
+  });
 
-    // โหลดชื่อคนขับ + ไซต์งานจาก API
-    fetch(apiUrl)
-      .then(res => res.json())
-      .then(data => {
-        const driverList = document.getElementById("driverList");
-        const siteList = document.getElementById("siteList");
+  fetch(apiUrl)
+    .then(res => res.json())
+    .then(data => {
+      const driverList = document.getElementById("driverList");
+      const siteList = document.getElementById("siteList");
 
-        data.drivers.forEach(name => {
-          const opt = document.createElement("option");
-          opt.value = name;
-          driverList.appendChild(opt);
-        });
-
-        data.sites.forEach(site => {
-          const opt = document.createElement("option");
-          opt.value = site;
-          siteList.appendChild(opt);
-        });
+      data.drivers.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        driverList.appendChild(opt);
       });
 
-    // อ่านรูปแล้วแปลง base64
-    document.getElementById("imageInput").addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = function() {
-        base64Image = reader.result.split(',')[1];
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // เมื่อ submit ฟอร์ม
-    document.getElementById("travelForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const form = e.target;
-      const formData = new FormData(form);
-      formData.append("imageBase64", base64Image);
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        body: formData
+      data.sites.forEach(site => {
+        const opt = document.createElement("option");
+        opt.value = site;
+        siteList.appendChild(opt);
       });
-
-      if (response.ok) {
-        alert("✅ ส่งข้อมูลเรียบร้อย");
-        form.reset();
-        base64Image = "";
-      } else {
-        alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
-      }
     });
-  </script>
+
+  document.getElementById("imageInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = function() {
+      base64Image = reader.result.split(',')[1];
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ✅ เหลือเพียง 1 submit listener
+  document.getElementById("travelForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    formData.append("imageBase64", base64Image);
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      body: formData
+    });
+
+    if (response.ok) {
+      alert("✅ ส่งข้อมูลเรียบร้อย");
+      form.reset();
+      base64Image = "";
+    } else {
+      alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
+    }
+  });
+</script>
 </body>
 </html>
