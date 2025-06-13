@@ -54,7 +54,7 @@
   </div>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbwnQxc30iyXQUZvO4q6jubqOiJtaa0vPKTEbWCY4eQdOb_OrqrCouNO8_mlEJVNtBjr/exec"; // ← เปลี่ยนตรงนี้
+    const apiUrl = "https://script.google.com/macros/s/AKfycbwnQxc30iyXQUZvO4q6jubqOiJtaa0vPKTEbWCY4eQdOb_OrqrCouNO8_mlEJVNtBjr/exec"; // ✅ ใส่ Web App URL ที่ Deploy แล้ว
 
     let base64Image = "";
 
@@ -68,7 +68,7 @@
       document.getElementById("location").value = coord;
     });
 
-    // ดึงรายชื่อ
+    // ดึงรายชื่อคนขับและไซต์งาน
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
@@ -84,9 +84,13 @@
           opt.value = site;
           siteList.appendChild(opt);
         });
+      })
+      .catch(err => {
+        console.error("🚨 Error loading names:", err);
+        alert("เกิดข้อผิดพลาดในการโหลดรายชื่อคนขับ/ไซต์งาน");
       });
 
-    // อ่านรูป
+    // แปลงรูปเป็น base64
     document.getElementById("imageInput").addEventListener("change", function(e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -96,7 +100,7 @@
       reader.readAsDataURL(file);
     });
 
-    // ส่งฟอร์ม
+    // เมื่อส่งฟอร์ม
     document.getElementById("travelForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const form = e.target;
@@ -138,21 +142,25 @@
           body: JSON.stringify(payload)
         });
 
+        const resultText = await response.text();  // ⬅️ ดึงข้อความจากฝั่ง Apps Script
+        console.log("📦 Server Response:", resultText);
+
         clearInterval(loadingInterval);
         progressBar.value = 100;
         progressText.textContent = "✅ ส่งข้อมูลเรียบร้อยแล้ว (100%)";
 
-        if (response.ok) {
+        if (response.ok && resultText === "OK") {
           alert("✅ ส่งข้อมูลเรียบร้อยแล้ว");
           form.reset();
           base64Image = "";
         } else {
-          alert("❌ มีปัญหาในการส่งข้อมูล");
+          alert("❌ ข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์: " + resultText);
         }
       } catch (err) {
         clearInterval(loadingInterval);
         progressBar.value = 0;
         progressText.textContent = "❌ เกิดข้อผิดพลาด";
+        console.error("❌ Network Error:", err);
         alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
       } finally {
         setTimeout(() => {
