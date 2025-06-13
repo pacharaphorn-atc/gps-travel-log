@@ -47,83 +47,93 @@
   </form>
 
   <script>
-  const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
-  let base64Image = "";
+    const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
+    let base64Image = "";
 
-  const params = new URLSearchParams(window.location.search);
-  document.getElementById("plate").value = params.get("plate") || "";
+    // 1. ดึงทะเบียนรถจาก query string
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById("plate").value = params.get("plate") || "";
 
-  navigator.geolocation.getCurrentPosition(function(pos) {
-    const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
-    document.getElementById("location").value = coord;
-  });
-
-  fetch(apiUrl)
-    .then(res => res.json())
-    .then(data => {
-      data.drivers.forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        document.getElementById("driverList").appendChild(opt);
-      });
-      data.sites.forEach(site => {
-        const opt = document.createElement("option");
-        opt.value = site;
-        document.getElementById("siteList").appendChild(opt);
-      });
+    // 2. ดึงพิกัด GPS
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+      document.getElementById("location").value = coord;
     });
 
-  document.getElementById("imageInput").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = function() {
-      base64Image = reader.result.split(',')[1];
-    };
-    reader.readAsDataURL(file);
-  });
+    // 3. โหลดชื่อคนขับ + ไซต์งาน
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(data => {
+        const driverList = document.getElementById("driverList");
+        const siteList = document.getElementById("siteList");
 
-  document.getElementById("travelForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const form = e.target;
-    const plate = form.plate.value.trim();
-    const driver = form.driver.value.trim();
-    const site = form.site.value.trim();
-    const mileage = form.mileage.value.trim();
+        data.drivers.forEach(name => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          driverList.appendChild(opt);
+        });
 
-    if (!plate || !driver || !site || !mileage || !base64Image) {
-      alert("❌ กรุณากรอกข้อมูลให้ครบ และแนบรูปภาพก่อนส่ง");
-      return;
-    }
-
-    const payload = {
-      plate,
-      driver,
-      site,
-      mileage,
-      location: form.location.value,
-      note: form.note.value || "",
-      imageBase64: base64Image
-    };
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        data.sites.forEach(site => {
+          const opt = document.createElement("option");
+          opt.value = site;
+          siteList.appendChild(opt);
+        });
       });
 
-      if (response.ok) {
-        alert("✅ ส่งข้อมูลเรียบร้อยแล้ว");
-        form.reset();
-        base64Image = "";
-      } else {
-        alert("❌ มีปัญหาในการส่งข้อมูล");
+    // 4. อ่านรูปแล้วแปลง base64
+    document.getElementById("imageInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        base64Image = reader.result.split(',')[1];
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 5. เมื่อ submit
+    document.getElementById("travelForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const form = e.target;
+
+      // ดึงค่าทุกช่อง
+      const plate = form.plate.value.trim();
+      const driver = form.driver.value.trim();
+      const site = form.site.value.trim();
+      const mileage = form.mileage.value.trim();
+      const location = form.location.value.trim();
+      const note = form.note.value.trim();
+
+      // ตรวจสอบว่าข้อมูลครบ
+      if (!plate || !driver || !site || !mileage || !base64Image) {
+        alert("❌ กรุณากรอกข้อมูลให้ครบ และแนบรูปภาพก่อนส่ง");
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
-    }
-  });
+
+      const payload = {
+        plate, driver, site, mileage, location,
+        note: note || "-",
+        imageBase64
+      };
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          alert("✅ ส่งข้อมูลเรียบร้อยแล้ว");
+          form.reset();
+          base64Image = "";
+        } else {
+          alert("❌ มีปัญหาในการส่งข้อมูล");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      }
+    });
   </script>
 </body>
 </html>
