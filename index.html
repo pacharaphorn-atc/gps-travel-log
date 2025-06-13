@@ -40,90 +40,90 @@
     <input type="text" name="location" id="location" readonly>
     <div class="note">ระบบจะกรอกอัตโนมัติ</div>
 
-    <label>หมายเหตุเพิ่มเติม (ไม่บังคับ)</label>
+    <label>หมายเหตุเพิ่มเติม</label>
     <textarea name="note" id="note"></textarea>
 
     <button type="submit">ส่งข้อมูล</button>
   </form>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec"; // 👈 เปลี่ยนเป็นของคุณ
-    let base64Image = "";
+  const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
+  let base64Image = "";
 
-    const params = new URLSearchParams(window.location.search);
-    document.getElementById("plate").value = params.get("plate") || "";
+  const params = new URLSearchParams(window.location.search);
+  document.getElementById("plate").value = params.get("plate") || "";
 
-    // ดึงตำแหน่งอัตโนมัติ
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
-      document.getElementById("location").value = coord;
-    });
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+    document.getElementById("location").value = coord;
+  });
 
-    // ดึงรายชื่อคนขับและไซต์จาก Google Sheets
-    fetch(apiUrl)
-      .then(res => res.json())
-      .then(data => {
-        const driverList = document.getElementById("driverList");
-        const siteList = document.getElementById("siteList");
-        data.drivers.forEach(name => {
-          const opt = document.createElement("option");
-          opt.value = name;
-          driverList.appendChild(opt);
-        });
-        data.sites.forEach(site => {
-          const opt = document.createElement("option");
-          opt.value = site;
-          siteList.appendChild(opt);
-        });
+  fetch(apiUrl)
+    .then(res => res.json())
+    .then(data => {
+      data.drivers.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        document.getElementById("driverList").appendChild(opt);
       });
-
-    // แปลงรูปภาพเป็น Base64
-    document.getElementById("imageInput").addEventListener("change", function(e) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = function() {
-        base64Image = reader.result.split(',')[1];
-      };
-      reader.readAsDataURL(file);
+      data.sites.forEach(site => {
+        const opt = document.createElement("option");
+        opt.value = site;
+        document.getElementById("siteList").appendChild(opt);
+      });
     });
 
-    // เมื่อกดส่งฟอร์ม
-    document.getElementById("travelForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
+  document.getElementById("imageInput").addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = function() {
+      base64Image = reader.result.split(',')[1];
+    };
+    reader.readAsDataURL(file);
+  });
 
-      // ตรวจข้อมูลที่จำเป็น
-      const plate = document.getElementById("plate").value.trim();
-      const driver = document.getElementById("driver").value.trim();
-      const site = document.getElementById("site").value.trim();
-      const mileage = document.getElementById("mileage").value.trim();
-      const location = document.getElementById("location").value.trim();
+  document.getElementById("travelForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const plate = form.plate.value.trim();
+    const driver = form.driver.value.trim();
+    const site = form.site.value.trim();
+    const mileage = form.mileage.value.trim();
 
-      if (!plate || !driver || !site || !mileage || !location || !base64Image) {
-        alert("❗ กรุณากรอกข้อมูลให้ครบ และแนบรูปภาพ");
-        return;
-      }
+    if (!plate || !driver || !site || !mileage || !base64Image) {
+      alert("❌ กรุณากรอกข้อมูลให้ครบ และแนบรูปภาพก่อนส่ง");
+      return;
+    }
 
-      const form = e.target;
-      const formData = new FormData(form);
-      const plainData = Object.fromEntries(formData.entries());
-      plainData.imageBase64 = base64Image;
+    const payload = {
+      plate,
+      driver,
+      site,
+      mileage,
+      location: form.location.value,
+      note: form.note.value || "",
+      imageBase64: base64Image
+    };
 
+    try {
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(plainData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         alert("✅ ส่งข้อมูลเรียบร้อยแล้ว");
         form.reset();
         base64Image = "";
-        document.getElementById("plate").value = params.get("plate") || "";
-        document.getElementById("location").value = location;
       } else {
-        alert("❌ เกิดข้อผิดพลาดในการส่งข้อมูล");
+        alert("❌ มีปัญหาในการส่งข้อมูล");
       }
-    });
+    } catch (err) {
+      console.error(err);
+      alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    }
+  });
   </script>
 </body>
 </html>
