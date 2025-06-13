@@ -6,16 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: sans-serif; padding: 1rem; background: #fff9f2; }
-    h2 { color: #cc6600; font-size: 1.8rem; }
-    label { display: block; margin-top: 1rem; font-weight: bold; font-size: 1.2rem; }
-    input, select, textarea { width: 100%; padding: 0.6rem; margin-top: 0.25rem; font-size: 1.1rem; }
+    h2 { color: #cc6600; font-size: 1.8rem; text-align: center; }
+    label { display: block; margin-top: 1rem; font-weight: bold; font-size: 1.1rem; }
+    input, select, textarea { width: 100%; padding: 0.6rem; margin-top: 0.25rem; font-size: 1rem; }
     button { margin-top: 1.5rem; padding: 0.75rem; background: #ff6600; color: white; border: none; width: 100%; font-size: 1.2rem; border-radius: 5px; }
     .note { font-size: 0.95rem; color: gray; margin-top: 0.25rem; }
-    img.logo { display: block; margin: 0 auto 1rem auto; width: 280px; height: auto; }
+    #loading { display: none; margin-top: 1rem; text-align: center; }
+    progress { width: 100%; height: 20px; }
+    .logo { display: block; margin: 0 auto 1rem auto; width: 220px; }
   </style>
 </head>
 <body>
-  <img src="logo.png" alt="โลโก้" class="logo">
+  <img src="logo.png" class="logo" alt="โลโก้">
   <h2>ฟอร์มแจ้งไมล์ก่อนเดินทาง</h2>
 
   <form id="travelForm">
@@ -46,33 +48,37 @@
     <button type="submit">ส่งข้อมูล</button>
   </form>
 
+  <div id="loading">
+    <progress id="progressBar" value="0" max="100"></progress>
+    <p id="progressText">กำลังส่งข้อมูล...</p>
+  </div>
+
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec";
+    const apiUrl = "https://script.google.com/macros/s/AKfycbyoQNb9-sOBg2kdXsZke0CLQyE029adOK2hXehZJcmAlv-RB_rDvVE7YVdhQqs6RHX6/exec"; // ← เปลี่ยนตรงนี้
+
     let base64Image = "";
 
-    // 1. ดึงทะเบียนรถจาก query string
+    // เติมทะเบียนรถจาก query
     const params = new URLSearchParams(window.location.search);
     document.getElementById("plate").value = params.get("plate") || "";
 
-    // 2. ดึงพิกัด GPS
+    // GPS
     navigator.geolocation.getCurrentPosition(function(pos) {
       const coord = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
       document.getElementById("location").value = coord;
     });
 
-    // 3. โหลดชื่อคนขับ + ไซต์งาน
+    // ดึงรายชื่อ
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
         const driverList = document.getElementById("driverList");
         const siteList = document.getElementById("siteList");
-
         data.drivers.forEach(name => {
           const opt = document.createElement("option");
           opt.value = name;
           driverList.appendChild(opt);
         });
-
         data.sites.forEach(site => {
           const opt = document.createElement("option");
           opt.value = site;
@@ -80,7 +86,7 @@
         });
       });
 
-    // 4. อ่านรูปแล้วแปลง base64
+    // อ่านรูป
     document.getElementById("imageInput").addEventListener("change", function(e) {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -90,12 +96,11 @@
       reader.readAsDataURL(file);
     });
 
-    // 5. เมื่อ submit
+    // ส่งฟอร์ม
     document.getElementById("travelForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const form = e.target;
 
-      // ดึงค่าทุกช่อง
       const plate = form.plate.value.trim();
       const driver = form.driver.value.trim();
       const site = form.site.value.trim();
@@ -103,11 +108,22 @@
       const location = form.location.value.trim();
       const note = form.note.value.trim();
 
-      // ตรวจสอบว่าข้อมูลครบ
       if (!plate || !driver || !site || !mileage || !base64Image) {
         alert("❌ กรุณากรอกข้อมูลให้ครบ และแนบรูปภาพก่อนส่ง");
         return;
       }
+
+      const loadingDiv = document.getElementById("loading");
+      const progressBar = document.getElementById("progressBar");
+      const progressText = document.getElementById("progressText");
+      loadingDiv.style.display = "block";
+
+      let progress = 0;
+      const loadingInterval = setInterval(() => {
+        progress = Math.min(progress + Math.random() * 10, 95);
+        progressBar.value = progress;
+        progressText.textContent = `กำลังส่งข้อมูล... ${Math.floor(progress)}%`;
+      }, 150);
 
       const payload = {
         plate, driver, site, mileage, location,
@@ -122,6 +138,10 @@
           body: JSON.stringify(payload)
         });
 
+        clearInterval(loadingInterval);
+        progressBar.value = 100;
+        progressText.textContent = "✅ ส่งข้อมูลเรียบร้อยแล้ว (100%)";
+
         if (response.ok) {
           alert("✅ ส่งข้อมูลเรียบร้อยแล้ว");
           form.reset();
@@ -130,8 +150,14 @@
           alert("❌ มีปัญหาในการส่งข้อมูล");
         }
       } catch (err) {
-        console.error(err);
+        clearInterval(loadingInterval);
+        progressBar.value = 0;
+        progressText.textContent = "❌ เกิดข้อผิดพลาด";
         alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+      } finally {
+        setTimeout(() => {
+          loadingDiv.style.display = "none";
+        }, 2000);
       }
     });
   </script>
