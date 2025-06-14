@@ -130,10 +130,11 @@
       }, 150);
 
       const payload = {
-        plate, driver, site, mileage, location,
-        note: note || "-",
-        imageBase64
+      plate, driver, site, mileage, location,
+      note: note || "-",
+      imageBase64: base64Image
       };
+
 
       try {
         const response = await fetch(apiUrl, {
